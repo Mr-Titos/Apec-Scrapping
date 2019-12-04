@@ -1,0 +1,94 @@
+{
+    "skillsArr": [
+      {
+        "arrGet": [
+            {
+                "name": ".net"
+            },
+            {
+                "name": "c#"
+            }
+        ],
+        "state": false
+      },
+      {
+        "arrGet": [
+            {
+                "name": "node.js"
+            },
+            {
+                "name": "nodejs"
+            },
+            {
+                "name": "node j s"
+            },
+            {
+                "name": "node js"
+            }
+        ],
+        "state": false
+      },
+      {
+        "arrGet": [
+            {
+                "name": "sql"
+            },
+            {
+                "name": "mysql"
+            }
+        ],
+        "state": false
+      },
+      {
+        "arrGet": [
+            {
+                "name": "java"
+            }
+        ],
+        "state": false
+      },
+      {
+        "arrGet": [
+            {
+                "name": "php"
+            },
+            {
+                "name": "symfony"
+            }
+        ],
+        "state": false
+      },
+      {
+        "arrGet": [
+            {
+                "name": "js"
+            },
+            {
+                "name": "javascript"
+            },
+            {
+                "name": "typescript"
+            },
+            {
+                "name": "java script"
+            }
+
+        ],
+        "state": false
+      },
+      {
+        "arrGet": [
+            {
+                "name": "react.js"
+            },
+            {
+                "name": "react js"
+            },
+            {
+                "name": "reactjs"
+            }
+        ],
+        "state": false
+      }
+    ]
+  }
