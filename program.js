@@ -61,10 +61,10 @@ rl.question('Please enter the url : ', (answer) => {
                 });
                 console.log("---------------Data acquire with success---------------");
                 console.log("\nPlease wait until the save is over...\n");
-                /* saveDB().then( () => {
+                 saveDB().then( () => {
                     console.log("---------------Data save in the Database---------------");
                     closeProgram(1);
-                }).catch(err => { console.log(err); }); */
+                }).catch(err => { console.log(err); });
             }).catch(err => { console.log("Error in processing data : " + err); }); 
 
         })
