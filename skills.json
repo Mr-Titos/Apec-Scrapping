@@ -42,7 +42,10 @@
       {
         "arrGet": [
             {
-                "name": "java"
+                "name": "java,"
+            },
+            {
+                "name": "java "
             }
         ],
         "state": false

@@ -13,6 +13,7 @@
   });
 
   let skillJSON;
+  let settingsDB;
 
   let salary = null; // Can be null
   let experience;
@@ -20,6 +21,19 @@
   let week;
   let contract;
   let society = null; // Can be null
+
+fs.readFile('settings.json', 'utf8', (err, jsonString) => {
+    if (err) {
+        console.log("Settings file read failed:", err)
+        return
+    } else {
+        try {
+            settingsDB = JSON.parse(jsonString)
+    } catch(err) {
+            console.log('Error parsing Responses JSON string:', err)
+        } 
+    }
+});
 
 rl.question('Please enter the url : ', (answer) => {
         puppeteer
@@ -59,7 +73,7 @@ rl.question('Please enter the url : ', (answer) => {
                 skillJSON.skillsArr.forEach(skill => {
                     console.log(skill.arrGet[0].name + ': ' + skill.state);
                 });
-                console.log("---------------Data acquire with success---------------");
+                console.log("------------Data acquire with success------------");
                 console.log("\nPlease wait until the save is over...\n");
                  saveDB().then( () => {
                     console.log("---------------Data save in the Database---------------");
@@ -218,10 +232,10 @@ function loadSkills() {
 function saveDB() {
     return new Promise(function (resolve, reject) {
         var conx = mysql.createConnection({
-            host: "localhost",
-            user: "root",
-            password: "",
-            database: "apec"
+            host: settingsDB.host,
+            user: settingsDB.user,
+            password: settingsDB.password,
+            database: settingsDB.database
         });
         
         conx.connect(function(err) {
