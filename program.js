@@ -61,10 +61,10 @@ rl.question('Please enter the url : ', (answer) => {
                 });
                 console.log("---------------Data acquire with success---------------");
                 console.log("\nPlease wait until the save is over...\n");
-                saveDB().then( () => {
+                /* saveDB().then( () => {
                     console.log("---------------Data save in the Database---------------");
                     closeProgram(1);
-                }).catch(err => { console.log(err); });
+                }).catch(err => { console.log(err); }); */
             }).catch(err => { console.log("Error in processing data : " + err); }); 
 
         })
@@ -145,13 +145,27 @@ function getCEC(html) {
 }
 
 function getSalExp(html) {
-    var sortData = function(data) {
+    var sortData = function(data, isSalary) {
         let stg = "";
+        let salary1 = 0;
         Array.from(data).forEach(s => {
-            if(s*0 === 0 && s != " ") // can be replace by a switch
+            if(s*0 === 0 && s != " ") { // can be replace by a switch
                 stg+=s;
+                if(stg.length >= 2 && isSalary == true && salary1 === 0) {
+                    salary1 = stg*1;
+                    //console.log(salary1);
+                    stg = "";
+                }
+            }
+            
         });
-        return stg;
+        if(!isSalary)
+            return stg;
+        else {
+            let arrSalary = new Array();
+            arrSalary[0] = salary1; arrSalary[1] = stg*1;
+            return arrSalary;
+        }
     }
     var dataSalExp = function(index) {
         // .details-post is a div and "> span" permit to get span in this div
@@ -167,16 +181,22 @@ function getSalExp(html) {
         let cellNodes = cells[i].children;
         let cellNode = cheerio(cellNodes[0]);
         if(cellNode.text() === "Salaire") {
-            saltemp = sortData(dataSalExp(i));
-            if(saltemp < 1000 && saltemp != "")
-                salary = saltemp*1000;
-            else if(saltemp != "")
-                salary = saltemp;
+            saltemp = sortData(dataSalExp(i), true);
+            if((saltemp[0] + (saltemp[1]*1)) < 1000 && saltemp[0] > 0 && saltemp[1] == 0) 
+                salary = saltemp[0]*1000;
+
+            else if(saltemp[0] != 0 && saltemp[0] + saltemp[1] < 25000 && saltemp[1] > 0) {
+                let avgSalary = (saltemp[0] + saltemp[1]) / 2;
+                console.log(saltemp[0] + '-' + saltemp[1]);
+                salary = avgSalary*1000;
+            }
+            else if (saltemp[0] != 0)
+                salary = saltemp[0];
             else 
                 salary = null;
         }
         else if(cellNode.text() === "Expérience")
-            experience = sortData(dataSalExp(i));
+            experience = sortData(dataSalExp(i), false);
     }
 }
 
