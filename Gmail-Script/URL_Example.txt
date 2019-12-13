@@ -1,0 +1,6 @@
+Example 1 :
+http://neomarket.diffusion.apec.fr/r/?id=hc1aa9ae,eda6803,eda6807&p1=www.apec.fr&p2=164816446W&p3=&xtor=EPR-41-[push_avec_compte]
+http://neomarket.diffusion.apec.fr/r/?id=hc1aa9ae,eda6803,eda6808&p1=www.apec.fr&p2=164816446W&p3=&xtor=EPR-41-[push_avec_compte]
+Example 2 :
+http://neomarket.diffusion.apec.fr/r/?id=hc1aa9ae,eda6803,eda680b&p1=www.apec.fr&p2=164816500W&p3=&xtor=EPR-41-[push_avec_compte]
+http://neomarket.diffusion.apec.fr/r/?id=hc1aa9ae,eda6803,eda680a&p1=www.apec.fr&p2=164816500W&p3=&xtor=EPR-41-[push_avec_compte]
