@@ -2,5 +2,6 @@
     "host": "localhost",
     "user": "root",
     "password": "",
-    "database": "apec"
+    "database": "apec",
+    "token": "8NBueS6wkpaQjVI0"
 }

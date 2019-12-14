@@ -13,12 +13,12 @@ function launch() {
 
 /**
 * Main function that will launch all secondary functions
- */
+*/
 function main() {
   try {
     const labelName = "Scrapping";
     const apecMail = "offres@diffusion.apec.fr";
-    var links;
+    var links = new Array();
     var response = Gmail.Users.Labels.list('me');
     
     if (response.labels.length == 0) {
@@ -32,7 +32,9 @@ function main() {
             message.forEach(function(d) {
               if(d.getFrom().toLowerCase().indexOf(apecMail) > -1) {
                 if(d.isStarred() == true) {
-                  sendLinks(getLinks(d.getBody()));
+                  getLinks(d.getBody(), links).forEach(function(item) {
+                    links.push(item);
+                  });
                   d.unstar();
                   d.refresh();
                 }                
@@ -44,6 +46,7 @@ function main() {
           });
         }
       }
+      sendLinks(links);
     }
   } catch(err) { console.log("Error in Main: " + err); }
 }

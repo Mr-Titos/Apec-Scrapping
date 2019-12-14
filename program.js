@@ -8,7 +8,8 @@
   //'https://www.apec.fr/candidat/recherche-emploi.html/emploi/detail-offre/164628320W?selectedIndex=0&page=0&xtor=EPR-41-%5Bpush_sans_compte%5D'
 
   let skillJSON;
-  let settingsDB;
+  let settingsJSON;
+  let reqBody;
 
   let salary = null; // Can be null
   let experience;
@@ -23,7 +24,7 @@ fs.readFile('settings.json', 'utf8', (err, jsonString) => {
         return
     } else {
         try {
-            settingsDB = JSON.parse(jsonString)
+            settingsJSON = JSON.parse(jsonString)
     } catch(err) {
             console.log('Error parsing Responses JSON string:', err)
         } 
@@ -31,77 +32,90 @@ fs.readFile('settings.json', 'utf8', (err, jsonString) => {
 });
 
 http.createServer(function (req, res) {
+
+    async function asyncMain(arr, callback) {
+        for (let index = 0; index < arr.length; index++) {
+          await callback(arr[index], index);
+        }
+    }
+
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Access-Control-Allow-Methods', 'GET,POST,OPTIONS');
     var indexT = req.rawHeaders.indexOf("token");
-    if(1 == 1) { // indexT != -1 && req.rawHeaders[indexT + 1] == token
+    if(1 == 1) { // req.rawHeaders[indexT + 1] == settingsJSON.token
         req.on('data', chunk => {
             reqBody = chunk.toString(); // convert Buffer to string
         });
         
         req.on('end', () => {
             //res.write();
-            JSON.parse(reqBody).forEach(item => {
-                main(item);
-            });
+            let mainQueue = async () => {
+                await asyncMain(JSON.parse(reqBody), main);
+                console.log("DONE");
+            }
+            mainQueue();
             res.end();
         });
     } else {
+        console.log("Invalid token");
         res.write("Invalid token");
         res.end();
     }
 }).listen(26969); 
 
-function main(url) {
-    puppeteer
-    .launch({args: ['--no-sandbox', '--disable-setuid-sandbox']}) // dangerous but useful for linux deployement
-    .then(browser => {
-        salary = null;
-        society = null;
-        loadSkills();
-        return browser.newPage();
-    })
-    .then(page => {
-    return page.goto(url).then( () => {
-        console.log("url : " + url);
-        return page.content();
-    });
-    })
-    .then(html => {
-        var process = new Promise((resolve, reject) => {
-            try {
-                console.log("-------------------In process-------------------");
-                resolve(
-                    getCEC(html),
-                    getWeek(html),
-                    getSalExp(html),
-                    getSkills(html)
-                );
-            }
-            catch(err) { reject(err); }
-        }); 
-        
-        process.then( () => {
-            console.log("Contract: " + contract);
-            console.log("Society: " + society);
-            console.log("City: " + city);
-            console.log("Salary: " + salary);
-            console.log("Experience: " + experience);
-            console.log("Date: " + week.toString());
-            skillJSON.skillsArr.forEach(skill => {
-                console.log(skill.arrGet[0].name + ': ' + skill.state);
-            });
-            console.log("------------Data acquire with success------------");
-            console.log("\nPlease wait until the save is over...\n");
-                saveDB().then( () => {
-                console.log("---------------Data save in the Database---------------");
-            }).catch(err => { console.log(err); });
-        }).catch(err => { console.log("Error in processing data : " + err + "Maybe the link is wrong ?"); }); 
+async function main(url, indexL) {
+        await puppeteer
+        .launch({args: ['--no-sandbox', '--disable-setuid-sandbox']}) // dangerous but useful for linux deployement
+        .then(browser => {
+            salary = null;
+            society = null;
+            loadSkills();
+            return browser.newPage();
+        })
+        .then(page => {
+        return page.goto(url, {timeout: 0}).then( () => {
+            console.log("Index "+ indexL + " / url : " + url);
+            return page.content();
+        });
+        })
+        .then(html => {
+            var exec = new Promise((resolve, reject) => {
+                try {
+                    console.log("-------------------In execuction-------------------");
+                    resolve(
+                        getCEC(html),
+                        getWeek(html),
+                        getSalExp(html),
+                        getSkills(html)
+                    );
+                }
+                catch(err) { reject(err); }
+            }); 
+            
+            exec.then( () => {
+                console.log("Contract: " + contract);
+                console.log("Society: " + society);
+                console.log("City: " + city);
+                console.log("Salary: " + salary);
+                console.log("Experience: " + experience);
+                console.log("Date: " + week.toString());
+                skillJSON.skillsArr.forEach(skill => {
+                    console.log(skill.arrGet[0].name + ': ' + skill.state);
+                });
+                console.log("------------Data acquire with success------------");
+                console.log("\nPlease wait until the save is over...\n");
+                    saveDB().then( () => {
+                    console.log("---------------Data save in the Database---------------");
 
-    })
-    .catch(err => {
-        console.log(err);
-    });
+                    //browser.close();
+                    
+                }).catch(err => { console.log(err); });
+            }).catch(err => { console.log("Error in processing data : " + err + " Maybe the link is wrong ?");  }); 
+
+        })
+        .catch(err => {
+            console.log(err);
+        });
 }
 
 function getSkills(html) {
@@ -221,8 +235,13 @@ function getSalExp(html) {
             else 
                 salary = null;
         }
-        else if(cellNode.text() === "Expérience")
-            experience = sortData(dataSalExp(i), false);
+        else if(cellNode.text() === "Expérience") {
+            var expTemp = sortData(dataSalExp(i), false);
+            if(expTemp != "" && expTemp != null)
+                experience = expTemp;
+            else 
+                experience = "0";
+        }
     }
 }
 
@@ -244,10 +263,10 @@ function loadSkills() {
 function saveDB() {
     return new Promise(function (resolve, reject) {
         var conx = mysql.createConnection({
-            host: settingsDB.host,
-            user: settingsDB.user,
-            password: settingsDB.password,
-            database: settingsDB.database
+            host: settingsJSON.host,
+            user: settingsJSON.user,
+            password: settingsJSON.password,
+            database: settingsJSON.database
         });
         
         conx.connect(function(err) {
