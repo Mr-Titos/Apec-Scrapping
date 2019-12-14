@@ -3,14 +3,9 @@
   const cheerio = require('cheerio');
   const mysql = require('mysql');
   const fs = require('fs');
-  const readline = require('readline');// temporary console interface before the full automation of the scrapping
+  const http = require('http');
   // Example of an url scrappingable :
   //'https://www.apec.fr/candidat/recherche-emploi.html/emploi/detail-offre/164628320W?selectedIndex=0&page=0&xtor=EPR-41-%5Bpush_sans_compte%5D'
-
-  const rl = readline.createInterface({
-    input: process.stdin,
-    output: process.stdout
-  });
 
   let skillJSON;
   let settingsDB;
@@ -35,61 +30,78 @@ fs.readFile('settings.json', 'utf8', (err, jsonString) => {
     }
 });
 
-rl.question('Please enter the url : ', (answer) => {
-        puppeteer
-        .launch()
-        .then(browser => {
-            salary = null;
-            society = null;
-            loadSkills();
-            return browser.newPage();
-        })
-        .then(page => {
-        return page.goto(answer).then( () => {
-            return page.content();
+http.createServer(function (req, res) {
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Access-Control-Allow-Methods', 'GET,POST,OPTIONS');
+    var indexT = req.rawHeaders.indexOf("token");
+    if(1 == 1) { // indexT != -1 && req.rawHeaders[indexT + 1] == token
+        req.on('data', chunk => {
+            reqBody = chunk.toString(); // convert Buffer to string
         });
-        })
-        .then(html => {
-            var process = new Promise((resolve, reject) => {
-                try {
-                    console.log("-------------------In process-------------------");
-                    resolve(
-                        getCEC(html),
-                        getWeek(html),
-                        getSalExp(html),
-                        getSkills(html)
-                    );
-                }
-                catch(err) { reject(err); }
-            }); 
-            
-            process.then( () => {
-                console.log("Contract: " + contract);
-                console.log("Society: " + society);
-                console.log("City: " + city);
-                console.log("Salary: " + salary);
-                console.log("Experience: " + experience);
-                console.log("Date: " + week.toString());
-                skillJSON.skillsArr.forEach(skill => {
-                    console.log(skill.arrGet[0].name + ': ' + skill.state);
-                });
-                console.log("------------Data acquire with success------------");
-                console.log("\nPlease wait until the save is over...\n");
-                 saveDB().then( () => {
-                    console.log("---------------Data save in the Database---------------");
-                    closeProgram(1);
-                }).catch(err => { console.log(err); });
-            }).catch(err => { console.log("Error in processing data : " + err); }); 
-
-        })
-        .catch(err => {
-            console.log(err);
+        
+        req.on('end', () => {
+            //res.write();
+            JSON.parse(reqBody).forEach(item => {
+                main(item);
+            });
+            res.end();
         });
-    rl.close();
-});
+    } else {
+        res.write("Invalid token");
+        res.end();
+    }
+}).listen(26969); 
 
-function closeProgram(code) {
-    process.exit(code);
+function main(url) {
+    puppeteer
+    .launch({args: ['--no-sandbox', '--disable-setuid-sandbox']}) // dangerous but useful for linux deployement
+    .then(browser => {
+        salary = null;
+        society = null;
+        loadSkills();
+        return browser.newPage();
+    })
+    .then(page => {
+    return page.goto(url).then( () => {
+        console.log("url : " + url);
+        return page.content();
+    });
+    })
+    .then(html => {
+        var process = new Promise((resolve, reject) => {
+            try {
+                console.log("-------------------In process-------------------");
+                resolve(
+                    getCEC(html),
+                    getWeek(html),
+                    getSalExp(html),
+                    getSkills(html)
+                );
+            }
+            catch(err) { reject(err); }
+        }); 
+        
+        process.then( () => {
+            console.log("Contract: " + contract);
+            console.log("Society: " + society);
+            console.log("City: " + city);
+            console.log("Salary: " + salary);
+            console.log("Experience: " + experience);
+            console.log("Date: " + week.toString());
+            skillJSON.skillsArr.forEach(skill => {
+                console.log(skill.arrGet[0].name + ': ' + skill.state);
+            });
+            console.log("------------Data acquire with success------------");
+            console.log("\nPlease wait until the save is over...\n");
+                saveDB().then( () => {
+                console.log("---------------Data save in the Database---------------");
+            }).catch(err => { console.log(err); });
+        }).catch(err => { console.log("Error in processing data : " + err + "Maybe the link is wrong ?"); }); 
+
+    })
+    .catch(err => {
+        console.log(err);
+    });
 }
 
 function getSkills(html) {
