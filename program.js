@@ -7,19 +7,11 @@
   // Example of an url scrappingable :
   //'https://www.apec.fr/candidat/recherche-emploi.html/emploi/detail-offre/164628320W?selectedIndex=0&page=0&xtor=EPR-41-%5Bpush_sans_compte%5D'
 
-  let browser;
+ let browser;
 
-  
-  let skillJSON;
-  let settingsJSON;
-  let reqBody;
-
-  let salary = null; // Can be null
-  let experience;
-  let city;
-  let week;
-  let contract;
-  let society = null; // Can be null
+ let skillJSON;
+ let settingsJSON;
+ let reqBody;
 
 fs.readFile('settings.json', 'utf8', (err, jsonString) => {
     if (err) {
@@ -81,38 +73,36 @@ async function main(url, indexL) {
         var exec = new Promise((resolve, reject) => {
             try {
                 console.log("-------------------In execuction-------------------");
-                resolve(
-                    getCEC(html),
-                    getWeek(html),
-                    getSalExp(html),
-                    getSkills(html)
-                );
+                resolve( [getCEC(html),getWeek(html),getSalExp(html),getSkills(html)] );
             }
             catch(err) { reject(err); }
         }); 
         
-        exec.then(async () => {
-            console.log("Contract: " + contract);
-            console.log("Society: " + society);
-            console.log("City: " + city);
-            console.log("Salary: " + salary);
-            console.log("Experience: " + experience);
-            console.log("Date: " + week.toString());
-            skillJSON.skillsArr.forEach(skill => {
+        exec.then(async (dataResolved) => {
+            console.log("Contract: " + dataResolved[0][2]);
+            console.log("Society: " + dataResolved[0][0]);
+            console.log("City: " + dataResolved[0][1]);
+            console.log("Salary: " + dataResolved[2][0]);
+            console.log("Experience: " + dataResolved[2][1]);
+            console.log("Date: " + dataResolved[1].toString());
+            dataResolved[3].forEach(skill => {
                 console.log(skill.arrGet[0].name + ': ' + skill.state);
             });
             console.log("------------Data acquire with success------------");
             console.log("\nPlease wait until the save is over...\n");
-                await saveDB().then(() => {
-                console.log("---------------Data save in the Database---------------");
+                await saveDB(dataResolved[0][2], dataResolved[0][0], dataResolved[0][1], dataResolved[2][0], 
+                dataResolved[2][1], dataResolved[1], dataResolved[3] ).then(() => {
+                    console.log("---------------Data save in the Database---------------");
+                    page.close(); // close the page on the virtual browser
             }).catch(err => { console.log(err); });
         }).catch(err => { console.log("Error in processing data : " + err + " Maybe the link is wrong ?");  }); 
     });
 }
 
 function getSkills(html) {
+    var skillsArray = skillJSON.skillsArr;
     var containSkill = function(data) {
-        skillJSON.skillsArr.forEach(skill => {
+        skillsArray.forEach(skill => {
             //console.log("foreach: " + skill.arrGet[0].name);
             for (var i = 0; i < skill.arrGet.length; i++) {
                 //console.log("for" + skill.arrGet[i].name);
@@ -133,6 +123,7 @@ function getSkills(html) {
             containSkill(cellNodeSkill.text().toLowerCase());
         }
     }
+    return skillsArray;
 }
 
 function getWeek(html) {
@@ -140,7 +131,8 @@ function getWeek(html) {
     let cellContract = cells[0].children;
     let cellNodeCont = cheerio(cellContract[0]);
     let parts = cellNodeCont.text().substring(cellNodeCont.text().indexOf('/') - 2).split('/');
-    week = new Date(parts[2], parts[1] -1, parts[0]);
+    let week =  new Date(parts[2], parts[1] -1, parts[0]);
+    return week;
 }
 
 function getCEC(html) {
@@ -166,14 +158,20 @@ function getCEC(html) {
         let cellCity = cells[2].children;
         let cellNodeEnt = cheerio(cellEnt[0]);
         let cellNodeCity = cheerio(cellCity[0]);
-        society = sortData(cellNodeEnt.text());
-        city = sortData(cellNodeCity.text());
+
+        let society = sortData(cellNodeEnt.text());
+        let city = sortData(cellNodeCity.text());
+        let contract = getCont();
+        return [society, city, contract];
     } else {
         let cellCity = cells[1].children;
         let cellNodeCity = cheerio(cellCity[0]);
-        city = sortData(cellNodeCity.text());
+
+        let society = null;
+        let city = sortData(cellNodeCity.text());
+        let contract = getCont();
+        return [society, city, contract];
     }
-    contract = getCont();
 }
 
 function getSalExp(html) {
@@ -209,9 +207,13 @@ function getSalExp(html) {
 
     // .details-post is a div and > h4 permit to get h4 in this div
     const cells = cheerio('.details-post > h4', html)
+
+    let salary = null;
+    let experience;
     for (let i = 0; i < cells.length; i++) {
         let cellNodes = cells[i].children;
         let cellNode = cheerio(cellNodes[0]);
+
         if(cellNode.text() === "Salaire") {
             saltemp = sortData(dataSalExp(i), true);
             if((saltemp[0] + (saltemp[1]*1)) < 1000 && saltemp[0] > 0 && saltemp[1] == 0) 
@@ -235,6 +237,7 @@ function getSalExp(html) {
                 experience = "0";
         }
     }
+    return [salary, experience];
 }
 
 async function loadSkills() {
@@ -252,7 +255,7 @@ async function loadSkills() {
     });
 }
 
-async function saveDB() {
+function saveDB(cont, soc, city, sal, exp, dte, skill) {
     return new Promise(function (resolve, reject) {
         var conx = mysql.createConnection({
             host: settingsJSON.host,
@@ -264,24 +267,23 @@ async function saveDB() {
         conx.connect(function(err) {
             if (err) reject(err);
             var post  = {
-                salary: salary, 
-                experience: experience,
+                salary: sal, 
+                experience: exp,
                 city: city,
-                date: week,
-                contract: contract,
-                society: society,
-                dotNet: skillJSON.skillsArr[0].state,
-                nodejs: skillJSON.skillsArr[1].state,
-                my_sql: skillJSON.skillsArr[2].state,
-                java: skillJSON.skillsArr[3].state,
-                php: skillJSON.skillsArr[4].state,
-                js: skillJSON.skillsArr[5].state,
-                reactjs: skillJSON.skillsArr[6].state
+                date: dte,
+                contract: cont,
+                society: soc,
+                dotNet: skill[0].state,
+                nodejs: skill[1].state,
+                my_sql: skill[2].state,
+                java: skill[3].state,
+                php: skill[4].state,
+                js: skill[5].state,
+                reactjs: skill[6].state
             };
             var querySend = conx.query('INSERT INTO offres SET ?', post, function (error, results, fields) {
                 if (error) reject(error);
             });
-            console.log(post);
             resolve(querySend.sql);
         });
     });  
