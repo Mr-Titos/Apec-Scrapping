@@ -8,7 +8,7 @@ function getLinks(data, unique) {
   var sortLink = function(text) {
     var textSorted = text.substring(0, data.indexOf('"'));
     var indexKey = textSorted.indexOf("p2=");
-    if(indexKey > -1 && text.indexOf("[push_avec_compte]") > -1) {
+    if(indexKey > -1 && text.indexOf("[push") > -1) {
       var stg = textSorted.substring(indexKey + 3);
       // test if the link code is already in the uniKey array
       if(uniKey.indexOf(stg.substring(0, stg.indexOf('&'))) == -1 && stg.substring(0, 1) != '?' && stg.substring(0, 1) != '/') {
